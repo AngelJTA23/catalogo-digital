@@ -270,12 +270,16 @@
                 id: "p7",
                 titulo: "Diadema Artesanal con Rosas",
                 categoria: "Diademas",
-                precio: 180,
+                precio: 80,
                 estado: "Bajo pedido",
                 imagen: "img/diadema.jpg.jpg",
                 descripcion: "Diadema decorada con rosas de listón hechas a mano, malla fina y detalles estelares."
             }
         ];
+
+        let activeCategory = "Todos";
+        let searchQuery = "";
+
         // INICIALIZACIÓN
         window.addEventListener('DOMContentLoaded', () => {
             renderCategories();
