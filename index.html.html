@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Virtual Interactivo</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Ocultar scrollbar en contenedor de categorías */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans text-slate-800 antialiased selection:bg-rose-500 selection:text-white">
+
+    <!-- HEADER / NAVBAR -->
+    <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            
+            <!-- Logo / Nombre de Negocio -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-rose-500/20">
+                    <i class="fa-solid fa-store text-lg"></i>
+                </div>
+                <div>
+                    <h1 id="shopTitle" class="font-bold text-lg leading-tight text-slate-900">Catálogo Digital</h1>
+                    <p class="text-xs text-slate-500">Pedidos directos por WhatsApp</p>
+                </div>
+            </div>
+
+            <!-- Acciones Header (Buscador escritorio + Botón Administrador) -->
+            <div class="flex items-center space-x-3">
+                <!-- Buscador Escritorio -->
+                <div class="relative hidden md:block w-64 lg:w-80">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Buscar producto o modelo..." 
+                           class="w-full pl-9 pr-4 py-2 text-sm bg-slate-100 hover:bg-slate-200/70 focus:bg-white rounded-full border-none focus:ring-2 focus:ring-rose-500 transition-all outline-none">
+                </div>
+
+                <!-- Botón Administrador de JSON -->
+                <button onclick="openAdminModal()" title="Gestionar Productos (JSON)" class="flex items-center space-x-2 px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200">
+                    <i class="fa-solid fa-code text-slate-500"></i>
+                    <span class="hidden sm:inline">Gestionar JSON</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Buscador Móvil -->
+        <div class="p-3 pt-0 md:hidden border-t border-slate-100 bg-white">
+            <div class="relative w-full">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="text" id="searchInputMobile" oninput="handleSearchMobile()" placeholder="Buscar producto o modelo..." 
+                       class="w-full pl-9 pr-4 py-2 text-sm bg-slate-100 rounded-full border-none focus:ring-2 focus:ring-rose-500 transition-all outline-none">
+            </div>
+        </div>
+    </header>
+
+    <!-- BANNER PROMOCIONAL / INFORMATIVO -->
+    <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white py-6 px-4 text-center relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        <div class="relative max-w-4xl mx-auto space-y-2">
+            <span class="inline-block px-3 py-1 bg-rose-500/30 text-rose-300 text-xs font-semibold rounded-full border border-rose-500/40 uppercase tracking-wider mb-1">
+                Catálogo Activo & Directo
+            </span>
+            <h2 class="text-xl sm:text-2xl font-bold tracking-tight">Elige tus favoritos y contáctanos al instante</h2>
+            <p class="text-xs sm:text-sm text-slate-300 max-w-2xl mx-auto">
+                Selecciona la categoría que prefieras, consulta fotos y disponibilidad, y haz tu pedido con un solo clic directamente a WhatsApp.
+            </p>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- CATEGORÍAS (PILLS SLIDER) -->
+        <section class="space-y-2">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Categorías disponibles</h3>
+                <span id="productCounter" class="text-xs font-medium text-slate-500">Cargando...</span>
+            </div>
+            
+            <div id="categoryContainer" class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+                <!-- Se llenan dinámicamente -->
+            </div>
+        </section>
+
+        <!-- GRID DE PRODUCTOS -->
+        <section>
+            <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Tarjetas generadas dinámicamente -->
+            </div>
+
+            <!-- ESTADO VACÍO (NO RESULTADOS) -->
+            <div id="emptyState" class="hidden py-16 text-center space-y-4">
+                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 text-2xl">
+                    <i class="fa-solid fa-box-open"></i>
+                </div>
+                <div class="space-y-1">
+                    <h4 class="font-bold text-slate-700">No se encontraron productos</h4>
+                    <p class="text-xs text-slate-500">Intenta buscando con otra palabra o selecciona una categoría distinta.</p>
+                </div>
+                <button onclick="resetFilters()" class="inline-flex items-center space-x-2 px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg hover:bg-slate-800 transition-colors">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>Restablecer Filtros</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
+            <p class="text-xs text-slate-500">Catálogo Web Dinámico &bull; Generado para optimizar tus ventas por WhatsApp</p>
+            <p class="text-xs text-slate-400">Desarrollado con HTML5, Tailwind CSS y JavaScript vanila.</p>
+        </div>
+    </footer>
+
+    <!-- MODAL DE DETALLE DE PRODUCTO -->
+    <div id="detailModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden transform transition-all my-8 relative">
+            <!-- Botón Cerrar -->
+            <button onclick="closeDetailModal()" class="absolute top-4 right-4 z-10 w-9 h-9 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="grid grid-cols-1 md:grid-cols-2">
+                <!-- Imagen Principal / Visor -->
+                <div class="bg-slate-100 relative h-64 md:h-full flex items-center justify-center">
+                    <img id="modalImage" src="" alt="" class="w-full h-full object-cover">
+                    <span id="modalBadge" class="absolute top-4 left-4 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md shadow-sm"></span>
+                </div>
+
+                <!-- Detalle de Información -->
+                <div class="p-6 flex flex-col justify-between space-y-6">
+                    <div class="space-y-4">
+                        <div>
+                            <span id="modalCategory" class="text-xs font-semibold text-rose-500 uppercase tracking-wider"></span>
+                            <h3 id="modalTitle" class="text-xl font-bold text-slate-900 mt-1"></h3>
+                            <div id="modalPrice" class="text-2xl font-extrabold text-slate-900 mt-2"></div>
+                        </div>
+
+                        <hr class="border-slate-100">
+
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Descripción y Detalle</h4>
+                            <p id="modalDescription" class="text-sm text-slate-600 leading-relaxed"></p>
+                        </div>
+
+                        <!-- Tiempo de entrega / Nota si aplica -->
+                        <div id="modalDeliveryInfo" class="bg-amber-50 border border-amber-200/60 rounded-xl p-3 flex items-start space-x-3 text-xs text-amber-800">
+                            <i class="fa-solid fa-clock text-amber-500 mt-0.5"></i>
+                            <div>
+                                <span class="font-bold block">Tiempo de Elaboración / Entrega:</span>
+                                <span id="modalDeliveryText">Este producto se prepara sobre pedido con anticipación.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón WhatsApp -->
+                    <a id="modalWhatsappBtn" href="#" target="_blank" class="w-full py-3 px-4 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl flex items-center justify-center space-x-2 shadow-lg shadow-brand-600/30 transition-all">
+                        <i class="fa-brands fa-whatsapp text-lg"></i>
+                        <span>Solicitar por WhatsApp</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE ADMINISTRADOR / GESTOR DE JSON -->
+    <div id="adminModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden my-6 flex flex-col max-h-[90vh]">
+            
+            <!-- Header Modal Admin -->
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-sliders text-rose-400"></i>
+                    <h3 class="font-bold text-base">Gestor de Productos & Exportador JSON</h3>
+                </div>
+                <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Contenido Modal Admin (Tabs & Formularios) -->
+            <div class="p-6 overflow-y-auto flex-1 space-y-6">
+                
+                <!-- Sección Agregar / Editar Producto -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                    <h4 class="font-bold text-sm text-slate-800 flex items-center space-x-2">
+                        <i class="fa-solid fa-circle-plus text-rose-500"></i>
+                        <span>Agregar Nuevo Producto al Catálogo</span>
+                    </h4>
+
+                    <form id="addProductForm" onsubmit="handleAddProduct(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <label class="block font-semibold text-slate-600 mb-1">Nombre del producto *</label>
+                            <input type="text" id="formTitle" required placeholder="Ej. Ramo Eterno Girasol" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-rose-500">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-600 mb-1">Categoría *</label>
+                            <input type="text" id="formCategory" required placeholder="Ej. Flores Eternas, Diademas, Perfumes" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-rose-500">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-600 mb-1">Precio (MXN) *</label>
+                            <input type="number" id="formPrice" required placeholder="250" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-rose-500">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-600 mb-1">Estado / Disponibilidad *</label>
+                            <select id="formStatus" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-rose-500">
+                                <option value="Disponible">Disponible Inmediato</option>
+                                <option value="Bajo pedido">Bajo pedido (Anticipación)</option>
+                                <option value="Agotado">Agotado</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block font-semibold text-slate-600 mb-1">URL de la Imagen *</label>
+                            <input type="url" id="formImage" required placeholder="https://images.unsplash.com/photo-..." class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-rose-500">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block font-semibold text-slate-600 mb-1">Descripción corta *</label>
+                            <textarea id="formDescription" required rows="2" placeholder="Detalles de materiales, tallas o fragancia..." class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-rose-500"></textarea>
+                        </div>
+                        <div class="sm:col-span-2 text-right">
+                            <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg shadow-md transition-colors">
+                                <i class="fa-solid fa-plus mr-1"></i> Añadir a la Lista
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Visor / Editor JSON directo -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-xs uppercase tracking-wider text-slate-500">Código JSON Actualizado</label>
+                        <button onclick="copyJSON()" class="text-xs font-semibold text-rose-600 hover:text-rose-700 flex items-center space-x-1">
+                            <i class="fa-solid fa-copy"></i>
+                            <span id="copyBtnText">Copiar JSON al Portapapeles</span>
+                        </button>
+                    </div>
+                    <textarea id="jsonOutput" rows="8" readonly class="w-full p-3 font-mono text-xs bg-slate-900 text-emerald-400 rounded-xl outline-none border border-slate-800 leading-relaxed"></textarea>
+                    <p class="text-[11px] text-slate-500">
+                        <i class="fa-solid fa-circle-info mr-1 text-slate-400"></i>
+                        Copia este código JSON y reemplaza la variable <code>initialProducts</code> en tu código HTML para guardar los cambios permanentemente.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Footer Modal Admin -->
+            <div class="px-6 py-3 bg-slate-100 border-t border-slate-200 text-right">
+                <button onclick="closeAdminModal()" class="px-4 py-2 bg-slate-800 text-white font-semibold text-xs rounded-lg hover:bg-slate-900 transition-colors">
+                    Cerrar Gestor
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JAVASCRIPT LÓGICA Y DATOS -->
+    <script>
+        // CONFIGURACIÓN: Número de WhatsApp para recibir pedidos (Incluir código de país sin +)
+        const WHATSAPP_PHONE = "+52 7471301073"; // Reemplazar con el número real de WhatsApp
+
+        // BASE DE DATOS INICIAL DE PRODUCTOS (JSON)
+        let initialProducts = [
+            {
+                id: "p1",
+                titulo: "Ramos Eternos Girasol & Rosas",
+                categoria: "Flores Eternas",
+                precio: 350,
+                estado: "Bajo pedido",
+                imagen: "https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=600&q=80",
+                descripcion: "Ramo elaborado totalmente a mano con listón satinado de alta calidad. Incluye 5 girasoles y 6 rosas. Durabilidad permanente."
+            },
+            {
+                id: "p2",
+                titulo: "Diademas & Flores",
+                categoria: "Diademas",
+                precio: 180,
+                estado: "Disponible",
+                imagen: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=600&q=80",
+                descripcion: "Diademas para Catrinas. Ideal para eventos."
+            },
+            {
+                id: "p3",
+                titulo: "Modelados 3D",
+                categoria: "Modelados 3d de planos arquitectonicos",
+                precio: 420,
+                estado: "Bajo pedido",
+                imagen: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=600&q=80",
+                descripcion: "Modelados en Skechutp"
+            },
+        
+        ];
+
+        // ESTADO GLOBAL DE LA APLICACIÓN
+        let products = [...initialProducts];
+        let activeCategory = "Todos";
+        let searchQuery = "";
+
+        // INICIALIZACIÓN
+        window.addEventListener('DOMContentLoaded', () => {
+            renderCategories();
+            renderProducts();
+            updateJSONOutput();
+        });
+
+        // RECTIFICAR Y OBTENER CATEGORÍAS ÚNICAS
+        function getCategories() {
+            const categories = ["Todos", ...new Set(products.map(p => p.categoria))];
+            return categories;
+        }
+
+        // RENDERIZAR FILTROS DE CATEGORÍA
+        function renderCategories() {
+            const container = document.getElementById('categoryContainer');
+            const categories = getCategories();
+
+            container.innerHTML = categories.map(cat => {
+                const isActive = cat === activeCategory;
+                const activeClasses = isActive 
+                    ? 'bg-slate-900 text-white shadow-md shadow-slate-900/20 font-bold' 
+                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 font-medium';
+                
+                return `
+                    <button onclick="selectCategory('${cat}')" 
+                            class="px-4 py-2 rounded-full text-xs transition-all whitespace-nowrap ${activeClasses}">
+                        ${cat}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        // FILTRADO DE PRODUCTOS
+        function selectCategory(cat) {
+            activeCategory = cat;
+            renderCategories();
+            renderProducts();
+        }
+
+        // BÚSQUEDA EN TIEMPO REAL
+        function handleSearch() {
+            searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+            document.getElementById('searchInputMobile').value = searchQuery;
+            renderProducts();
+        }
+
+        function handleSearchMobile() {
+            searchQuery = document.getElementById('searchInputMobile').value.toLowerCase().trim();
+            document.getElementById('searchInput').value = searchQuery;
+            renderProducts();
+        }
+
+        function resetFilters() {
+            activeCategory = "Todos";
+            searchQuery = "";
+            document.getElementById('searchInput').value = "";
+            document.getElementById('searchInputMobile').value = "";
+            renderCategories();
+            renderProducts();
+        }
+
+        // RENDERIZAR GRID DE PRODUCTOS
+        function renderProducts() {
+            const grid = document.getElementById('productGrid');
+            const emptyState = document.getElementById('emptyState');
+            const counter = document.getElementById('productCounter');
+
+            // Filtrar por categoría y búsqueda
+            const filtered = products.filter(p => {
+                const matchesCat = activeCategory === "Todos" || p.categoria === activeCategory;
+                const matchesSearch = p.titulo.toLowerCase().includes(searchQuery) || 
+                                      p.descripcion.toLowerCase().includes(searchQuery) ||
+                                      p.categoria.toLowerCase().includes(searchQuery);
+                return matchesCat && matchesSearch;
+            });
+
+            counter.innerText = `${filtered.length} producto(s) encontrado(s)`;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = "";
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            grid.innerHTML = filtered.map(p => {
+                // Configurar badge de estado
+                let badgeStyle = "bg-emerald-100 text-emerald-800 border-emerald-200";
+                if(p.estado === "Bajo pedido") badgeStyle = "bg-amber-100 text-amber-800 border-amber-200";
+                if(p.estado === "Agotado") badgeStyle = "bg-rose-100 text-rose-800 border-rose-200";
+
+                // Enlace directo de WhatsApp
+                const waMessage = encodeURIComponent(`¡Hola! Me interesa el producto "${p.titulo}" ($${p.precio} MXN) del catálogo. ¿Tienen disponibilidad o detalles para realizar el pedido?`);
+                const waLink = `https://api.whatsapp.com/send?phone=${WHATSAPP_PHONE}&text=${waMessage}`;
+
+                return `
+                    <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group">
+                        
+                        <!-- Imagen de producto -->
+                        <div class="relative h-52 bg-slate-100 overflow-hidden cursor-pointer" onclick="openDetailModal('${p.id}')">
+                            <img src="${p.imagen}" alt="${p.titulo}" 
+                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                 onerror="this.src='https://placehold.co/600x400/f1f5f9/475569?text=Sin+Imagen'">
+                            
+                            <!-- Badge Disponibilidad -->
+                            <span class="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border backdrop-blur-md ${badgeStyle}">
+                                ${p.estado}
+                            </span>
+                        </div>
+
+                        <!-- Info del Producto -->
+                        <div class="p-4 flex-1 flex flex-col justify-between space-y-4">
+                            <div class="space-y-1">
+                                <span class="text-[11px] font-semibold text-rose-500 uppercase tracking-wider">${p.categoria}</span>
+                                <h4 class="font-bold text-slate-900 text-base line-clamp-1 cursor-pointer hover:text-rose-600 transition-colors" onclick="openDetailModal('${p.id}')">
+                                    ${p.titulo}
+                                </h4>
+                                <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">${p.descripcion}</p>
+                            </div>
+
+                            <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block font-medium">PRECIO</span>
+                                    <span class="text-lg font-extrabold text-slate-900">$${p.precio} <span class="text-xs font-normal text-slate-500">MXN</span></span>
+                                </div>
+
+                                <div class="flex items-center space-x-1.5">
+                                    <button onclick="openDetailModal('${p.id}')" title="Ver detalles" 
+                                            class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+                                        <i class="fa-solid fa-eye text-sm"></i>
+                                    </button>
+
+                                    <a href="${waLink}" target="_blank" title="Pedir por WhatsApp" 
+                                       class="px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow-md shadow-brand-600/20 transition-all">
+                                        <i class="fa-brands fa-whatsapp text-sm"></i>
+                                        <span>Pedir</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // MODAL DETALLE DE PRODUCTO
+        function openDetailModal(id) {
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+
+            document.getElementById('modalTitle').innerText = product.titulo;
+            document.getElementById('modalCategory').innerText = product.categoria;
+            document.getElementById('modalPrice').innerText = `$${product.precio} MXN`;
+            document.getElementById('modalDescription').innerText = product.descripcion;
+            document.getElementById('modalImage').src = product.imagen;
+
+            const modalBadge = document.getElementById('modalBadge');
+            modalBadge.innerText = product.estado;
+            if (product.estado === "Bajo pedido") {
+                modalBadge.className = "absolute top-4 left-4 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md shadow-sm bg-amber-100 text-amber-800 border border-amber-200";
+            } else if (product.estado === "Agotado") {
+                modalBadge.className = "absolute top-4 left-4 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md shadow-sm bg-rose-100 text-rose-800 border border-rose-200";
+            } else {
+                modalBadge.className = "absolute top-4 left-4 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md shadow-sm bg-emerald-100 text-emerald-800 border border-emerald-200";
+            }
+
+            // Mensaje de entrega
+            const deliveryText = document.getElementById('modalDeliveryText');
+            if (product.estado === "Bajo pedido") {
+                deliveryText.innerText = "Este producto se realiza bajo pedido. Tiempo estimado de entrega: 3 a 5 días hábiles.";
+            } else {
+                deliveryText.innerText = "Producto disponible para entrega inmediata o envío directo.";
+            }
+
+            // Enlace de WhatsApp Modal
+            const waMessage = encodeURIComponent(`¡Hola! Quisiera más información sobre el producto "${product.titulo}" ($${product.precio} MXN) visto en su catálogo virtual.`);
+            document.getElementById('modalWhatsappBtn').href = `https://api.whatsapp.com/send?phone=${WHATSAPP_PHONE}&text=${waMessage}`;
+
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+        }
+
+        // MODAL GESTOR DE PRODUCTOS (ADMIN JSON)
+        function openAdminModal() {
+            updateJSONOutput();
+            document.getElementById('adminModal').classList.remove('hidden');
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminModal').classList.add('hidden');
+        }
+
+        // AÑADIR NUEVO PRODUCTO AL ESTADO
+        function handleAddProduct(event) {
+            event.preventDefault();
+
+            const newProduct = {
+                id: "p" + (Date.now()),
+                titulo: document.getElementById('formTitle').value.trim(),
+                categoria: document.getElementById('formCategory').value.trim(),
+                precio: Number(document.getElementById('formPrice').value),
+                estado: document.getElementById('formStatus').value,
+                imagen: document.getElementById('formImage').value.trim(),
+                descripcion: document.getElementById('formDescription').value.trim()
+            };
+
+            products.unshift(newProduct);
+            
+            // Actualizar vista
+            renderCategories();
+            renderProducts();
+            updateJSONOutput();
+
+            // Limpiar formulario
+            document.getElementById('addProductForm').reset();
+            alert("¡Producto agregado correctamente al catálogo temporal!");
+        }
+
+        // ACTUALIZAR CÓDIGO JSON EN TEXTAREA
+        function updateJSONOutput() {
+            document.getElementById('jsonOutput').value = JSON.stringify(products, null, 2);
+        }
+
+        // COPIAR JSON AL PORTAPAPELES
+        function copyJSON() {
+            const textarea = document.getElementById('jsonOutput');
+            textarea.select();
+            document.execCommand('copy');
+            
+            const btnText = document.getElementById('copyBtnText');
+            btnText.innerText = "¡Copiado con Éxito!";
+            setTimeout(() => {
+                btnText.innerText = "Copiar JSON al Portapapeles";
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
