@@ -207,10 +207,8 @@
 
     <!-- JAVASCRIPT LÓGICA Y DATOS -->
     <script>
-        // CONFIGURACIÓN: Número de WhatsApp para recibir pedidos
-        const WHATSAPP_PHONE = "527471301073"; 
+        const WHATSAPP_PHONE = "527471301073";
 
-        // BASE DE DATOS DE PRODUCTOS REALES (Pétalos de Amor)
         let products = [
             {
                 id: "p1",
@@ -280,7 +278,6 @@
         let activeCategory = "Todos";
         let searchQuery = "";
 
-        // INICIALIZACIÓN
         window.addEventListener('DOMContentLoaded', () => {
             renderCategories();
             renderProducts();
